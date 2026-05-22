@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session Report — {{date}} — {{slug}}</title>
+  <style>
+    /* ─── Design tokens ─── */
+    :root {
+      --bg:#0f172a; --surface:#1e293b; --surface2:#263248; --border:#334155;
+      --text:#e2e8f0; --muted:#94a3b8; --faint:#475569;
+      --ok:#22c55e; --warn:#f59e0b; --fail:#ef4444; --info:#3b82f6; --purple:#a78bfa;
+      --ok-bg:#052e16; --warn-bg:#3b2706; --fail-bg:#3a0a0a; --info-bg:#0b1d3e;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      --radius: 8px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         line-height:1.6;min-height:100vh}
+
+    /* ─── Layout ─── */
+    .page{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
+    .header{margin-bottom:28px}
+    .header h1{font-size:26px;font-weight:700;margin-bottom:4px}
+    .header .meta{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:16px}
+    .header .meta span{display:flex;align-items:center;gap:5px}
+
+    /* ─── Status bar ─── */
+    .status-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+                gap:12px;margin-bottom:28px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+               padding:14px 16px}
+    .stat-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+                      color:var(--muted);margin-bottom:4px}
+    .stat-card .value{font-size:24px;font-weight:700;line-height:1}
+    .stat-card .value.ok{color:var(--ok)}
+    .stat-card .value.fail{color:var(--fail)}
+    .stat-card .value.warn{color:var(--warn)}
+    .stat-card .value.info{color:var(--info)}
+
+    /* ─── Tabs ─── */
+    .tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:24px;overflow-x:auto}
+    .tab-btn{background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;
+             padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;
+             white-space:nowrap;transition:color .15s,border-color .15s}
+    .tab-btn:hover{color:var(--text)}
+    .tab-btn.active{color:var(--info);border-bottom-color:var(--info)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    /* ─── Cards ─── */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+          padding:16px 18px;margin-bottom:14px}
+    .card h3{font-size:14px;font-weight:600;color:var(--muted);margin-bottom:10px;
+             text-transform:uppercase;letter-spacing:.05em}
+
+    /* ─── Section heading ─── */
+    h2{font-size:18px;font-weight:700;margin:0 0 14px;padding-left:12px;
+       border-left:3px solid var(--info)}
+
+    /* ─── Tables ─── */
+    .table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{background:var(--surface2);color:var(--muted);font-weight:600;font-size:11px;
+       text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left}
+    td{padding:9px 12px;border-top:1px solid var(--border);vertical-align:top;color:var(--text)}
+    tr:hover td{background:var(--surface2)}
+
+    /* ─── Code ─── */
+    code{font-family:var(--mono);font-size:12px;background:#0b1224;padding:1px 6px;
+         border-radius:4px;color:#fde68a}
+    pre{font-family:var(--mono);font-size:12px;background:#0b1224;padding:14px 16px;
+        border-radius:var(--radius);overflow-x:auto;border:1px solid var(--border);
+        line-height:1.5;white-space:pre}
+
+    /* ─── Command block with copy button ─── */
+    .cmd-block{position:relative;margin:10px 0}
+    .cmd-block pre{padding-right:80px}
+    .copy-btn{position:absolute;top:8px;right:8px;background:var(--surface2);border:1px solid var(--border);
+              color:var(--muted);font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px;
+              cursor:pointer;font-family:inherit;transition:color .15s,background .15s}
+    .copy-btn:hover{color:var(--text);background:var(--border)}
+    .copy-btn.copied{color:var(--ok);border-color:var(--ok)}
+
+    /* ─── Diff blocks ─── */
+    .diff-add{color:#86efac;background:#052e1655}
+    .diff-remove{color:#fca5a5;background:#3a0a0a55}
+    .diff-meta{color:var(--faint)}
+
+    /* ─── Pills / badges ─── */
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;
+          font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .pill.ok{background:var(--ok-bg);color:var(--ok);border:1px solid #14532d}
+    .pill.warn{background:var(--warn-bg);color:var(--warn);border:1px solid #78350f}
+    .pill.fail{background:var(--fail-bg);color:var(--fail);border:1px solid #7f1d1d}
+    .pill.info{background:var(--info-bg);color:#7dd3fc;border:1px solid #1e3a8a}
+    .pill.new{background:#1a0b3e;color:var(--purple);border:1px solid #4c1d95}
+
+    /* ─── Collapsible details ─── */
+    details{border:1px solid var(--border);border-radius:var(--radius);margin:10px 0;overflow:hidden}
+    summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:13px;
+            background:var(--surface);color:var(--muted);list-style:none;
+            display:flex;justify-content:space-between;align-items:center}
+    summary::after{content:"▶";font-size:11px;transition:transform .2s}
+    details[open] summary::after{transform:rotate(90deg)}
+    details[open] summary{color:var(--text)}
+    details .details-body{padding:14px 16px;background:var(--bg)}
+
+    /* ─── Alert boxes ─── */
+    .alert{border-radius:var(--radius);padding:12px 16px;margin:10px 0;
+           display:flex;gap:10px;font-size:13px;align-items:flex-start}
+    .alert.warn{background:var(--warn-bg);border:1px solid #78350f;color:#fcd34d}
+    .alert.fail{background:var(--fail-bg);border:1px solid #7f1d1d;color:#fca5a5}
+    .alert.ok{background:var(--ok-bg);border:1px solid #14532d;color:#86efac}
+    .alert.info{background:var(--info-bg);border:1px solid #1e3a8a;color:#93c5fd}
+    .alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+    /* ─── Timeline / vertical list ─── */
+    .timeline{list-style:none;padding:0}
+    .timeline li{position:relative;padding:0 0 16px 24px;border-left:2px solid var(--border);margin-left:6px}
+    .timeline li::before{content:"";position:absolute;left:-5px;top:4px;width:8px;height:8px;
+                         border-radius:50%;background:var(--info)}
+    .timeline li:last-child{border-left-color:transparent}
+    .timeline .tl-label{font-size:11px;color:var(--muted);margin-bottom:2px;font-weight:600;
+                         text-transform:uppercase;letter-spacing:.04em}
+    .timeline .tl-text{font-size:13px}
+
+    /* ─── Grid layout ─── */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:700px){.grid-2{grid-template-columns:1fr}}
+
+    /* ─── Progress bar ─── */
+    .progress-bar{height:6px;background:var(--border);border-radius:999px;overflow:hidden;margin-top:8px}
+    .progress-fill{height:100%;border-radius:999px;background:var(--ok);transition:width .4s}
+
+    /* ─── Links ─── */
+    a{color:#7dd3fc;text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* ─── Misc ─── */
+    .muted{color:var(--muted);font-size:13px}
+    .spacer{height:20px}
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════════ -->
+  <div class="header">
+    <h1>Session Report — {{date}}</h1>
+    <div class="meta">
+      <span>📁 <code>{{slug}}</code></span>
+      <span>🌿 Branch: <code>{{branch}}</code></span>
+      <span>🕐 {{time}}</span>
+      <span>🤖 Agent: <code>{{agent}}</code></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       STATUS BAR — quick glance numbers
+  ═══════════════════════════════════════════════════════ -->
+  <div class="status-bar">
+    <div class="stat-card">
+      <div class="label">Tests Passed</div>
+      <div class="value ok">{{tests_passed}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Tests Failed</div>
+      <div class="value fail">{{tests_failed}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Files Changed</div>
+      <div class="value info">{{files_changed}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">LOC Delta</div>
+      <div class="value warn">{{loc_delta}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Perf Regression</div>
+      <div class="value {{perf_status}}">{{perf_label}}</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TABS
+  ═══════════════════════════════════════════════════════ -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(event,'tab-summary')">Summary</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-tests')">Tests</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-files')">Files Changed</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-perf')">Performance</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-manual')">Manual Steps</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-diffs')">Diffs</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-next')">Next Steps</button>
+  </div>
+
+  <!-- ─── Tab: Summary ─── -->
+  <div id="tab-summary" class="tab-panel active">
+    <h2>Goal &amp; Outcome</h2>
+    <div class="card">
+      <p>{{summary_text}}</p>
+    </div>
+
+    <div class="spacer"></div>
+    <h2>What Changed (Timeline)</h2>
+    <ul class="timeline">
+      <li>
+        <div class="tl-label">Phase 1</div>
+        <div class="tl-text">{{phase_1}}</div>
+      </li>
+      <li>
+        <div class="tl-label">Phase 2</div>
+        <div class="tl-text">{{phase_2}}</div>
+      </li>
+      <li>
+        <div class="tl-label">Verified</div>
+        <div class="tl-text">{{verification_summary}}</div>
+      </li>
+    </ul>
+
+    <div class="spacer"></div>
+    <h2>Known Issues / Deferred</h2>
+    <div class="card">{{deferred_items}}</div>
+  </div>
+
+  <!-- ─── Tab: Tests ─── -->
+  <div id="tab-tests" class="tab-panel">
+    <h2>Test Results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Test File</th><th>Status</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Time (s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row template:
+          <tr>
+            <td><code>backend/tests/test_xyz.py</code></td>
+            <td><span class="pill ok">PASS</span></td>
+            <td class="ok">5</td><td>0</td><td>0</td><td>1.23</td>
+          </tr>
+          -->
+          <tr><td colspan="6" class="muted">— no tests recorded —</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="spacer"></div>
+    <h2>Raw pytest Output</h2>
+    <details>
+      <summary>Expand full test output</summary>
+      <div class="details-body">
+        <pre>{{pytest_output}}</pre>
+      </div>
+    </details>
+
+    <div class="spacer"></div>
+    <!-- Alert: paste here if any tests failed or were skipped with justification -->
+    <!-- <div class="alert warn"><span class="alert-icon">⚠</span> test_xyz skipped — Docker not running in CI</div> -->
+  </div>
+
+  <!-- ─── Tab: Files Changed ─── -->
+  <div id="tab-files" class="tab-panel">
+    <h2>Files Changed</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Path</th><th>Action</th><th>LOC +/-</th><th>Rationale</th></tr>
+        </thead>
+        <tbody>
+          <!-- Row template:
+          <tr>
+            <td><code>backend/platforms/facebook/foo.py</code></td>
+            <td><span class="pill new">NEW</span></td>
+            <td><span class="ok">+45</span> / <span class="fail">-0</span></td>
+            <td>Implements X because Y</td>
+          </tr>
+          -->
+          <tr><td colspan="4" class="muted">— fill from git diff --stat —</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── Tab: Performance ─── -->
+  <div id="tab-perf" class="tab-panel">
+    <h2>Performance Check</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Before</h3>
+        <p class="muted">{{perf_before_label}}</p>
+        <div style="font-size:28px;font-weight:700;color:var(--warn);margin-top:6px">{{perf_before}}s</div>
+      </div>
+      <div class="card">
+        <h3>After</h3>
+        <p class="muted">{{perf_after_label}}</p>
+        <div style="font-size:28px;font-weight:700;color:var(--ok);margin-top:6px">{{perf_after}}s</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:{{perf_pct}}%"></div></div>
+        <p class="muted" style="margin-top:6px;font-size:12px">{{perf_delta_label}}</p>
+      </div>
+    </div>
+    <!-- Add more hot-path comparisons as needed -->
+  </div>
+
+  <!-- ─── Tab: Manual Steps ─── -->
+  <div id="tab-manual" class="tab-panel">
+    <h2>Manual Verification Steps</h2>
+    <!-- Use .alert.warn for MANUAL VERIFICATION REQUIRED notice -->
+    <!-- Use .cmd-block for copyable commands -->
+
+    <div class="card">
+      <h3>Step 1 — {{manual_step_1_title}}</h3>
+      <div class="cmd-block">
+        <pre id="cmd1">{{manual_step_1_cmd}}</pre>
+        <button class="copy-btn" onclick="copyCmd('cmd1',this)">Copy</button>
+      </div>
+      <p class="muted">Expected: <code>{{manual_step_1_expected}}</code></p>
+    </div>
+
+    <div class="card">
+      <h3>Rollback</h3>
+      <div class="cmd-block">
+        <pre id="cmd-rollback">{{rollback_cmd}}</pre>
+        <button class="copy-btn" onclick="copyCmd('cmd-rollback',this)">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Tab: Diffs ─── -->
+  <div id="tab-diffs" class="tab-panel">
+    <h2>Key Diff Excerpts</h2>
+    <p class="muted" style="margin-bottom:16px">Colour: <span style="color:#86efac">green = added</span> · <span style="color:#fca5a5">red = removed</span></p>
+
+    <details open>
+      <summary>{{diff_file_1}} <span class="pill info">{{diff_file_1_summary}}</span></summary>
+      <div class="details-body">
+        <pre>{{diff_file_1_content}}</pre>
+      </div>
+    </details>
+
+    <!-- Add more <details> blocks per file -->
+  </div>
+
+  <!-- ─── Tab: Next Steps ─── -->
+  <div id="tab-next" class="tab-panel">
+    <h2>Recommended Follow-Up</h2>
+    <div class="card">
+      <ul style="padding-left:20px;font-size:14px;line-height:2">
+        <li>{{next_1}}</li>
+        <li>{{next_2}}</li>
+        <li>{{next_3}}</li>
+      </ul>
+    </div>
+
+    <div class="spacer"></div>
+    <h2>Post-Code Checklist</h2>
+    <div class="card">
+      <table>
+        <tr><td>FEATURE_INDEX.md updated</td><td>{{check_feature_index}}</td></tr>
+        <tr><td>PROJECT_MAP.md updated</td><td>{{check_project_map}}</td></tr>
+        <tr><td>types/index.ts updated (if new types)</td><td>{{check_types}}</td></tr>
+        <tr><td>i18n keys added (if new UI strings)</td><td>{{check_i18n}}</td></tr>
+        <tr><td>.env.example updated (if new env vars)</td><td>{{check_env}}</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div><!-- .page -->
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT — tabs + copy
+═══════════════════════════════════════════════════════ -->
+<script>
+  function switchTab(evt, panelId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    evt.currentTarget.classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  }
+
+  function copyCmd(preId, btn) {
+    const text = document.getElementById(preId).textContent.trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

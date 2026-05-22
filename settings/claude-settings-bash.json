@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[DOCS REMINDER] File modified. Before finishing: docs-keeper MUST update AI_AGENTS_SYSTEM/FEATURE_INDEX.md (add or update feature entry) and PROJECT_MAP.md (update public interface if signature changed).\"}}' ",
+            "shell": "bash",
+            "timeout": 5,
+            "statusMessage": "Checking docs sync..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\":\"[POST-CODE CHECKLIST] Before closing: (1) tests written + run? (2) HTML session report generated at docs/sessions/? (3) FEATURE_INDEX.md updated? (4) PROJECT_MAP.md updated?\"}'",
+            "shell": "bash",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
