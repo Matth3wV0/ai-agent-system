@@ -1,6 +1,6 @@
 ---
 name: code-explorer
-description: Lightweight read-only code analysis agent for [PROJECT_NAME]. Spawn this agent whenever ANY other agent needs to read, search, or understand existing code — instead of reading files directly into their own context. Reads files, extracts the relevant information, and returns a concise structured summary. The caller's context stays clean; only the summary flows back. Use for: FEATURE_INDEX.md lookups, understanding existing implementations before editing, searching for patterns or function signatures, tracing data flow across modules.
+description: "Lightweight read-only code analysis agent for [PROJECT_NAME]. Spawn this agent whenever ANY other agent needs to read, search, or understand existing code — instead of reading files directly into their own context. Reads files, extracts the relevant information, and returns a concise structured summary. The caller's context stays clean; only the summary flows back. Use for FEATURE_INDEX.md lookups, understanding existing implementations before editing, searching for patterns or function signatures, tracing data flow across modules."
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: haiku
 ---

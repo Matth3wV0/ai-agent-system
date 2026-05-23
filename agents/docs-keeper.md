@@ -1,6 +1,6 @@
 ---
 name: docs-keeper
-description: Documentation curator and context logger for [PROJECT_NAME]. Two modes: (A) logs session context to .omc/logs/ when triggered by task-master at the start of every request; (B) updates AI_AGENTS_SYSTEM/FEATURE_INDEX.md and PROJECT_MAP.md after code changes by engineer. Always runs last in the pipeline. Triggered automatically by PostToolUse hook after Write/Edit.
+description: "Documentation curator and context logger for [PROJECT_NAME]. Two modes — (A) logs session context to .omc/logs/ when triggered by task-master at the start of every request; (B) updates AI_AGENTS_SYSTEM/FEATURE_INDEX.md and PROJECT_MAP.md after code changes by engineer. Always runs last in the pipeline. Triggered automatically by PostToolUse hook after Write/Edit."
 tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 model: haiku
 ---
