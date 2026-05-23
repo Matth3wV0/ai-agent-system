@@ -36,8 +36,15 @@ task-master → architect (multi-layer only) → engineer → test-runner → do
 ### 1. Clone this repo
 
 ```bash
+# Mac/Linux — clone as hidden folder (conventional for tools)
 git clone https://github.com/Matth3wV0/ai-agent-system ~/.ai-agent-system
+
+# Windows PowerShell
+git clone https://github.com/Matth3wV0/ai-agent-system "$HOME\.ai-agent-system"
 ```
+
+> The target path after the URL tells git what to name the folder.
+> Without it, git creates `ai-agent-system/` (no dot, not hidden).
 
 ### 2. Open Claude Code in your target project
 
